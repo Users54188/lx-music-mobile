@@ -1,0 +1,39 @@
+name: Build Patched APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  Android:
+    name: Android
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out git repository
+        uses: actions/checkout@v4
+
+      - name: Setup Env
+        uses: ./.github/actions/setup
+
+      - name: Generate self-signed keystore
+        shell: bash
+        run: |
+          keytool -genkey -v -keystore android/app/patch.keystore \
+            -storepass android -keyalg RSA -keysize 2048 -validity 10000 \
+            -alias patchkey -keypass android -dname "CN=LX Patch"
+          cat > android/keystore.properties <<EOF
+          storeFile=patch.keystore
+          storePassword=android
+          keyAlias=patchkey
+          keyPassword=android
+          EOF
+
+      - name: Build Packages
+        shell: bash
+        working-directory: android
+        run: ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: lx-music-patched-arm64
+          path: android/app/build/outputs/apk/release/*.apk

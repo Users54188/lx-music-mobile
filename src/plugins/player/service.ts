@@ -23,6 +23,11 @@ const handleExitApp = async(reason: string) => {
   exitApp(reason)
 }
 
+// 部分 ROM(如 MagicOS 灵动胶囊/播控中心)在暂停或收起媒体卡片时会顺带发一次 stop，
+// 而 remote-stop 是本软件的退出指令，会把"点暂停"变成"杀掉进程"
+let lastPausedAt = 0
+const wasJustPaused = () => Date.now() - lastPausedAt < 1500
+
 
 const registerPlaybackService = async() => {
   if (isInitialized) return
@@ -50,6 +55,11 @@ const registerPlaybackService = async() => {
 
   TrackPlayer.addEventListener(TPEvent.RemoteStop, () => {
     // console.log('remote-stop')
+    if (wasJustPaused()) {
+      console.log('remote-stop ignored, treat as pause')
+      void pause()
+      return
+    }
     void handleExitApp('Remote Stop')
   })
 
@@ -85,8 +95,12 @@ const registerPlaybackService = async() => {
         // console.log('state', 'State.NONE')
         break
       case TPState.Ready:
-      case TPState.Stopped:
       case TPState.Paused:
+        lastPausedAt = Date.now()
+        global.app_event.playerPause()
+        global.app_event.pause()
+        break
+      case TPState.Stopped:
         global.app_event.playerPause()
         global.app_event.pause()
         break
