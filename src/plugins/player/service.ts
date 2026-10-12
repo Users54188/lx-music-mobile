@@ -24,7 +24,7 @@ const handleExitApp = async(reason: string) => {
 }
 
 // 部分 ROM(如 MagicOS 灵动胶囊/播控中心)在暂停或收起媒体卡片时会顺带发一次 stop，
-// 而 remote-stop 是本软件的退出指令，会把"点暂停"变成"杀掉进程"
+// 而 remote-stop 是本软件的退出指令，会让点暂停变成杀进程
 let lastPausedAt = 0
 const wasJustPaused = () => Date.now() - lastPausedAt < 1500
 
